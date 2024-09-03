@@ -1,0 +1,44 @@
+{
+    "cbm_data": [
+      {
+        "measurement": "thresholds",
+        "tags": {
+          "machine_id": "machine_1",
+          "sensor_type": "vibration_velocity",
+          "zone": "zone_1",
+          "threshold_type": "apnormal"
+        },
+        "fields": {
+          "value" : 55.5
+        },
+        "timestamp": "2024-08-28T12:00:00Z"
+      },
+      {
+        "measurement": "sensor_data",
+        "tags": {
+          "machine_id": "machine_1",
+          "sensor_type": "vibration_velocity",
+          "zone": "zone_1"
+        },
+        "fields": {
+          "value": 7.2
+        },
+        "timestamp": "2024-08-28T12:01:00Z"
+      },
+      {
+        "measurement": "events",
+        "tags": {
+          "machine_id": "machine_1",
+          "sensor_type": "vibration_velocity",
+          "zone": "zone_1"
+        },
+        "fields": {
+          "event_type": "warning",
+          "value": 8.5,
+          "message": "warning threshold breached"
+        },
+        "timestamp": "2024-08-28T12:01:05Z"
+      }
+    ]
+  }
+  
