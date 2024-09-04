@@ -7,9 +7,9 @@ app = Flask(__name__)
 CORS(app) 
 
 influxdb_url = "http://localhost:8086"  
-token = "6MqmqE78Vs3sUI4v-lSrlYcxo57yBETHmT4cIiMBLZGzfrd-Dw2CL1IDLCnrRKxxEu9kcD6AvtyUP9mcSq7GYw=="
-org = "DIMA"
-bucket = "Dummy_CBM"
+bucket = "{bucket}"
+org = "cbm"
+token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
 
 client = InfluxDBClient(url=influxdb_url, token=token, org=org)
 
@@ -58,7 +58,7 @@ def get_thresholds():
     
     print(f"Zone: {zone}, Machine ID: {machine_id}, Sensor Type: {sensor_type}")  
     query_apnormal = f'''
-    from(bucket: "Dummy_CBM")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
@@ -71,7 +71,7 @@ def get_thresholds():
     '''
 
     query_warning = f'''
-    from(bucket: "Dummy_CBM")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
@@ -144,7 +144,7 @@ def update_thresholds():
     # Write both points to InfluxDB
     try:
         write_api = client.write_api()
-        write_api.write(bucket="Dummy_CBM", org=org, record=[point_apnormal, point_warning])
+        write_api.write(bucket="{bucket}", org=org, record=[point_apnormal, point_warning])
     except Exception as e:
         print(f"Error writing to InfluxDB: {e}")
         return jsonify({"error": str(e)}), 500
@@ -164,7 +164,7 @@ def get_data():
     print(f"Zone: {zone}, Machine ID: {machine_id}, Sensor Type: {sensor_type}, Start Time: {start_time}, End Time: {end_time}")  # Debugging
 
     query = f'''
-    from(bucket: "Dummy_CBM")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "sensor_data")
         |> filter(fn: (r) => r["_field"] == "value")
