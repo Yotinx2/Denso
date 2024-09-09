@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app) 
 
 influxdb_url = "http://localhost:8086"  
-bucket = "{bucket}"
+bucket = "test"
 org = "cbm"
 token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
 
@@ -144,7 +144,7 @@ def update_thresholds():
     # Write both points to InfluxDB
     try:
         write_api = client.write_api()
-        write_api.write(bucket="{bucket}", org=org, record=[point_apnormal, point_warning])
+        write_api.write(bucket=bucket, org=org, record=[point_apnormal, point_warning])
     except Exception as e:
         print(f"Error writing to InfluxDB: {e}")
         return jsonify({"error": str(e)}), 500
