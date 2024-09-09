@@ -19,15 +19,15 @@
         </div>
 
         <div class="chart-section">
-          <RealTimeChart v-if="isRealtime" />
-          <StaticChart v-else />
-          <button @click="toggleMode"> {{ isRealtime ? 'Switch to Static' : 'Switch to Real-Time' }}</button>
-       
+          <RealTimeChart v-show="isRealtime" />
+          <StaticChart v-show="!isRealtime"/>
+          <button @click="toggleMode">
+            {{ isRealtime ? 'Switch to Static' : 'Switch to Real-Time' }}
+          </button>
         </div>
 
         <div class="health-indicator-section">
           <Con4Component />
-         
         </div>
       </div>
       <div class="footer">
@@ -40,11 +40,11 @@
 <script>
 import Con1Component from "./components/Con1Component.vue";
 import Con2Component from "./components/Con2Component.vue";
-//import Con3Component from "./components/Con3Component.vue";
 import Con4Component from "./components/Con4Component.vue";
 import HeaderInfo from "./components/HeaderInfo.vue";
 import StaticChart from "./components/StaticChart.vue";
 import RealTimeChart from "./components/RealTime.vue";
+
 export default {
   name: "MainComponent",
   components: {
@@ -53,122 +53,93 @@ export default {
     RealTimeChart,
     Con4Component,
     HeaderInfo,
-    StaticChart
+    StaticChart,
   },
   data() {
     return {
       isRealtime: true,
-      }
+    };
+  },
+  methods: {
+    toggleMode() {
+      this.isRealtime = !this.isRealtime;
     },
-    methods: {
-      toggleMode(){
-        this.isRealtime = !this.isRealtime;
-      }
-    }
+  },
 };
 </script>
 
-
-<style >
-
-
-header {
-  background-color: #222;
-}
+<style>
+/* General Page Styles */
 .html {
-  color: black;
+  color: white;
+  background-color: #222;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-html,
-body {
-  height: 100%;
-  background-color: #222;
-  margin: 0;
+/* Header Styles */
+.header-container {
+  font-size: 26px;
+  font-weight: bold;
+  background-color: #060606;
+  color: white;
+  padding: 13px;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .header-section {
-  margin-right: 20px ;
-  margin-left: 10px;
-  padding: 0;
+  padding: 0 20px;
   height: 65px;
-  margin-bottom: 0;
-}
-
-.header-container {
-  font-size: 26px;
-  font-family: serif;
-  color: white;
-  font-weight: bold;
-  background-color: rgb(6, 6, 6);
-  padding: 13px;
-  text-align: center;
   margin-bottom: 10px;
- 
 }
 
-.machine-info {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 10px;
-  margin-left: 6px;
-  
-}
-
-.machine-info div {
-  font-size: 16px;
-  font-weight: bold;
-}
-
+/* Grid Layout */
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
-  margin-left: 6px;
-  margin-right: 6px;
+  grid-gap: 10px;
+  padding: 10px;
+  margin: 10px;
 }
 
 .grid-container > div {
-  min-height: 200px;
   padding: 10px;
-  margin: 0;
-  box-sizing: border-box; /* Includes padding and border in height/width calculations */
+  background-color: #333;
+  box-sizing: border-box;
+  border-radius: 4px;
 }
-
-.zone-section {
-  grid-column: 1 / 2;
-  grid-row: 1 / 2;
-  background-color: #222;
-  padding: 10px;
-}
-
-.event-section {
-  grid-column: 2 / 3;
-  grid-row: 1 / 2;
-  background-color: #222;
-  padding: 10px;
-}
-
-.chart-section {
-  grid-column: 1 / 2;
-  grid-row: 2 / 3;
-  background-color: #222;
-  padding: 10px;
-}
-
+/* Section Styles */
+.zone-section,
+.event-section,
+.chart-section,
 .health-indicator-section {
-  grid-column: 2 / 3;
-  grid-row: 2 / 3;
   background-color: #222;
-  padding: 10px;
 }
-
-.footer {
+.chart-section button {
   margin-top: 10px;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+.chart-section button:hover {
+  background-color: #555;
+}
+/* Footer Styles */
+.footer {
+  margin-top: 20px;
   text-align: center;
   font-size: 14px;
   color: #ccc;
-  background-color: #000000;
+  background-color: #000;
   padding: 15px;
-  margin-bottom: 0;
 }
 </style>
