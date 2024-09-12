@@ -56,100 +56,161 @@ def get_thresholds():
     machine_id = request.args.get('machine_id', default="machine_1", type=str)
     sensor_type = request.args.get('sensor_type', default="current", type=str)
     
-    print(f"Zone: {zone}, Machine ID: {machine_id}, Sensor Type: {sensor_type}")  
-    query_apnormal = f'''
-    from(bucket: "{bucket}")
+    query_upper_abnormal = f'''
+    from(bucket: "test")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
         |> filter(fn: (r) => r["machine_id"] == "{machine_id}")
         |> filter(fn: (r) => r["sensor_type"] == "{sensor_type}")
-        |> filter(fn: (r) => r["threshold_type"] == "apnormal")
+        |> filter(fn: (r) => r["threshold_type"] == "upper_abnormal")
         |> filter(fn: (r) => r["zone"] == "{zone}")
         |> sort(columns: ["_time"], desc: true)
         |> limit(n: 1)
     '''
 
-    query_warning = f'''
-    from(bucket: "{bucket}")
+    query_lower_abnormal = f'''
+    from(bucket: "test")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
         |> filter(fn: (r) => r["machine_id"] == "{machine_id}")
         |> filter(fn: (r) => r["sensor_type"] == "{sensor_type}")
-        |> filter(fn: (r) => r["threshold_type"] == "warning")
+        |> filter(fn: (r) => r["threshold_type"] == "lower_abnormal")
         |> filter(fn: (r) => r["zone"] == "{zone}")
         |> sort(columns: ["_time"], desc: true)
         |> limit(n: 1)
     '''
+
+    query_upper_warning = f'''
+    from(bucket: "test")
+        |> range(start: -10y)
+        |> filter(fn: (r) => r["_measurement"] == "thresholds")
+        |> filter(fn: (r) => r["_field"] == "value")
+        |> filter(fn: (r) => r["machine_id"] == "{machine_id}")
+        |> filter(fn: (r) => r["sensor_type"] == "{sensor_type}")
+        |> filter(fn: (r) => r["threshold_type"] == "upper_warning")
+        |> filter(fn: (r) => r["zone"] == "{zone}")
+        |> sort(columns: ["_time"], desc: true)
+        |> limit(n: 1)
+    '''
+
+    query_lower_warning = f'''
+    from(bucket: "test")
+        |> range(start: -10y)
+        |> filter(fn: (r) => r["_measurement"] == "thresholds")
+        |> filter(fn: (r) => r["_field"] == "value")
+        |> filter(fn: (r) => r["machine_id"] == "{machine_id}")
+        |> filter(fn: (r) => r["sensor_type"] == "{sensor_type}")
+        |> filter(fn: (r) => r["threshold_type"] == "lower_warning")
+        |> filter(fn: (r) => r["zone"] == "{zone}")
+        |> sort(columns: ["_time"], desc: true)
+        |> limit(n: 1)
+    '''
+    
     query_api = client.query_api()
     
-    tables_apnormal = query_api.query(query=query_apnormal, org=org)
-    tables_warning = query_api.query(query=query_warning, org=org)
+    tables_upper_abnormal = query_api.query(query=query_upper_abnormal, org=org)
+    tables_lower_abnormal = query_api.query(query=query_lower_abnormal, org=org)
+    tables_upper_warning = query_api.query(query=query_upper_warning, org=org)
+    tables_lower_warning = query_api.query(query=query_lower_warning, org=org)
 
-    apnormal_values = {}
-    for table in tables_apnormal:
+    thresholds = {}
+    for table in tables_upper_abnormal:
         for record in table.records:
-            apnormal_values[record["_time"]] = record["_value"]
+            thresholds['upper_abnormal'] = record["_value"]
 
-    warning_values = {}
-    for table in tables_warning:
+    for table in tables_lower_abnormal:
         for record in table.records:
-            warning_values[record["_time"]] = record["_value"]
+            thresholds['lower_abnormal'] = record["_value"]
 
-    combined_values = []
-    for time_apnormal, value_apnormal in apnormal_values.items():
-        closest_time_warning = min(warning_values.keys(), key=lambda t: abs(t - time_apnormal))
-        value_warning = warning_values[closest_time_warning]
-        combined_values.append([value_apnormal, value_warning])
+    for table in tables_upper_warning:
+        for record in table.records:
+            thresholds['upper_warning'] = record["_value"]
 
+    for table in tables_lower_warning:
+        for record in table.records:
+            thresholds['lower_warning'] = record["_value"]
 
-    print(combined_values)
-    return jsonify(combined_values)
-
+    return jsonify(thresholds)
 
 @app.route('/update-thresholds', methods=['POST'])
 def update_thresholds():
-
     data = request.json
 
     zone = data.get('zone', '')
     machine_id = data.get('machine_id', '')
     sensor_type = data.get('sensor_type', '')
-    warning_value = data.get('warning_value')
-    apnormal_value = data.get('apnormal_value')
+    upper_abnormal_value = data.get('upper_abnormal', None)
+    lower_abnormal_value = data.get('lower_abnormal', None)
+    upper_warning_value = data.get('upper_warning', None)
+    lower_warning_value = data.get('lower_warning', None)
 
-    if apnormal_value is None or warning_value is None:
-        return jsonify({"error": "Both apnormal and warning values are required"}), 400
+    if upper_abnormal_value is not None:
+        point_apnormal = Point("thresholds") \
+            .tag("zone", zone) \
+            .tag("machine_id", machine_id) \
+            .tag("sensor_type", sensor_type) \
+            .tag("threshold_type", "upper_abnormal") \
+            .field("value", float(upper_abnormal_value)) \
+            .time(datetime.utcnow(), WritePrecision.NS)
 
-    print(f"Updating thresholds for Zone: {zone}, Machine ID: {machine_id}, Sensor Type: {sensor_type}, Apnormal Value: {apnormal_value}, Warning Value: {warning_value}")  # Debugging
+        try:
+            write_api = client.write_api()
+            write_api.write(bucket= bucket, org=org, record=point_apnormal)
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}")
+            return jsonify({"error": str(e)}), 500
 
-    # Create points for both thresholds
-    point_apnormal = Point("thresholds") \
-        .tag("zone", zone) \
-        .tag("machine_id", machine_id) \
-        .tag("sensor_type", sensor_type) \
-        .tag("threshold_type", "apnormal") \
-        .field("value", float(apnormal_value)) \
-        .time(datetime.utcnow(), WritePrecision.NS)
+    if lower_abnormal_value is not None:
+        point_apnormal = Point("thresholds") \
+            .tag("zone", zone) \
+            .tag("machine_id", machine_id) \
+            .tag("sensor_type", sensor_type) \
+            .tag("threshold_type", "lower_abnormal") \
+            .field("value", float(lower_abnormal_value)) \
+            .time(datetime.utcnow(), WritePrecision.NS)
 
-    point_warning = Point("thresholds") \
-        .tag("zone", zone) \
-        .tag("machine_id", machine_id) \
-        .tag("sensor_type", sensor_type) \
-        .tag("threshold_type", "warning") \
-        .field("value", float(warning_value)) \
-        .time(datetime.utcnow(), WritePrecision.NS)
+        try:
+            write_api = client.write_api()
+            write_api.write(bucket= bucket, org=org, record=point_apnormal)
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}")
+            return jsonify({"error": str(e)}), 500
 
-    # Write both points to InfluxDB
-    try:
-        write_api = client.write_api()
-        write_api.write(bucket=bucket, org=org, record=[point_apnormal, point_warning])
-    except Exception as e:
-        print(f"Error writing to InfluxDB: {e}")
-        return jsonify({"error": str(e)}), 500
+    if upper_warning_value is not None:
+        point_warning = Point("thresholds") \
+            .tag("zone", zone) \
+            .tag("machine_id", machine_id) \
+            .tag("sensor_type", sensor_type) \
+            .tag("threshold_type", "upper_warning") \
+            .field("value", float(upper_warning_value)) \
+            .time(datetime.utcnow(), WritePrecision.NS)
 
-    return jsonify({"message": "Both thresholds updated successfully"})
+        try:
+            write_api = client.write_api()
+            write_api.write(bucket= bucket, org=org, record=point_warning)
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    if lower_warning_value is not None:
+        point_warning = Point("thresholds") \
+            .tag("zone", zone) \
+            .tag("machine_id", machine_id) \
+            .tag("sensor_type", sensor_type) \
+            .tag("threshold_type", "lower_warning") \
+            .field("value", float(lower_warning_value)) \
+            .time(datetime.utcnow(), WritePrecision.NS)
+
+        try:
+            write_api = client.write_api()
+            write_api.write(bucket= bucket, org=org, record=point_warning)
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    return jsonify({"message": "Thresholds updated successfully"})
 
 
 @app.route('/api/static-data', methods=['GET'])
