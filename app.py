@@ -7,9 +7,9 @@ app = Flask(__name__)
 CORS(app) 
 
 influxdb_url = "http://localhost:8086"  
-bucket = "test"
+bucket = "cbm"
 org = "cbm"
-token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
+token = "o8zaAgQtH20dtxRHujzTMZOXm2jUoNIAQs2ZzUke_wr4bUxcGKR-igFCxr-3sCd5u2pWzm8RjfLrx48nCXGZMw=="
 
 client = InfluxDBClient(url=influxdb_url, token=token, org=org)
 
@@ -57,7 +57,7 @@ def get_thresholds():
     sensor_type = request.args.get('sensor_type', default="current", type=str)
     
     query_upper_abnormal = f'''
-    from(bucket: "test")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
@@ -70,7 +70,7 @@ def get_thresholds():
     '''
 
     query_lower_abnormal = f'''
-    from(bucket: "test")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
@@ -83,7 +83,7 @@ def get_thresholds():
     '''
 
     query_upper_warning = f'''
-    from(bucket: "test")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
@@ -96,7 +96,7 @@ def get_thresholds():
     '''
 
     query_lower_warning = f'''
-    from(bucket: "test")
+    from(bucket: "{bucket}")
         |> range(start: -10y)
         |> filter(fn: (r) => r["_measurement"] == "thresholds")
         |> filter(fn: (r) => r["_field"] == "value")
