@@ -5,9 +5,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import time
 
 # Configuration
-bucket = "Dummy_CBM"
-org = "DIMA"
-token = "6MqmqE78Vs3sUI4v-lSrlYcxo57yBETHmT4cIiMBLZGzfrd-Dw2CL1IDLCnrRKxxEu9kcD6AvtyUP9mcSq7GYw=="
+bucket = "test"
+org = "cbm"
+token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
 url = "http://localhost:8086"
 
 # Create InfluxDB client
