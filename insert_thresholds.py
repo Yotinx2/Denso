@@ -5,9 +5,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import time
 from collections import defaultdict
 # Configuration
-bucket = "Dummy_CBM"
-org = "DIMA"
-token = "6MqmqE78Vs3sUI4v-lSrlYcxo57yBETHmT4cIiMBLZGzfrd-Dw2CL1IDLCnrRKxxEu9kcD6AvtyUP9mcSq7GYw=="
+bucket = "test"
+org = "cbm"
+token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
 url = "http://localhost:8086"
 
 # # Create InfluxDB client
@@ -34,73 +34,130 @@ def insert_initial_thresholds():
     for machine_id in machine_ids:
         for zone in zones:
             for sensor_type, max_value in sensor_types.items():
-                appnormal = 0.8 * max_value[1]
-                warning = 0.75 * max_value[1]
+                upperAbnormal = 0.8 * max_value[1]
+                lowerAbnormal = 0.2 * max_value[1]
+                upperWarning = 0.75 * max_value[1]
+                lowerWarning = 0.25 * max_value[1]
 
-                # Insert apnormal threshold
-                point_appnormal = Point("thresholds") \
+                # Insert upper abnormal threshold
+                point_upperAbnormal = Point("thresholds") \
                     .tag("machine_id", machine_id) \
                     .tag("sensor_type", sensor_type) \
                     .tag("zone", zone) \
-                    .tag("threshold_type", "apnormal") \
-                    .field("value", appnormal) \
+                    .tag("threshold_type", "upper_abnormal") \
+                    .field("value", upperAbnormal) \
                     .time(datetime.utcnow(), WritePrecision.NS)
-                write_api.write(bucket=bucket, org=org, record=point_appnormal)
-                # Insert warning threshold
-                point_warning = Point("thresholds") \
+                write_api.write(bucket=bucket, org=org, record=point_upperAbnormal)
+
+                # Insert lower abnormal threshold
+                point_lowerAbnormal = Point("thresholds") \
                     .tag("machine_id", machine_id) \
                     .tag("sensor_type", sensor_type) \
                     .tag("zone", zone) \
-                    .tag("threshold_type", "warning") \
-                    .field("value", warning) \
+                    .tag("threshold_type", "lower_abnormal") \
+                    .field("value", lowerAbnormal) \
                     .time(datetime.utcnow(), WritePrecision.NS)
-                write_api.write(bucket=bucket, org=org, record=point_warning)
+                write_api.write(bucket=bucket, org=org, record=point_lowerAbnormal)
+
+                # Insert upper warning threshold
+                point_upperWarning = Point("thresholds") \
+                    .tag("machine_id", machine_id) \
+                    .tag("sensor_type", sensor_type) \
+                    .tag("zone", zone) \
+                    .tag("threshold_type", "upper_warning") \
+                    .field("value", upperWarning) \
+                    .time(datetime.utcnow(), WritePrecision.NS)
+                write_api.write(bucket=bucket, org=org, record=point_upperWarning)
+
+                # Insert lower warning threshold
+                point_lowerWarning = Point("thresholds") \
+                    .tag("machine_id", machine_id) \
+                    .tag("sensor_type", sensor_type) \
+                    .tag("zone", zone) \
+                    .tag("threshold_type", "lower_warning") \
+                    .field("value", lowerWarning) \
+                    .time(datetime.utcnow(), WritePrecision.NS)
+                write_api.write(bucket=bucket, org=org, record=point_lowerWarning)
 
                 print(f"Inserted thresholds for {machine_id} - {sensor_type} in {zone}")
 insert_initial_thresholds()
 
-query_appnormal = '''
+# Query for upper abnormal threshold
+query_upperAbnormal = '''
 from(bucket: "Dummy_CBM")
   |> range(start: -1h)
   |> filter(fn: (r) => r["_measurement"] == "thresholds")
   |> filter(fn: (r) => r["_field"] == "value")
   |> filter(fn: (r) => r["machine_id"] == "machine_1")
   |> filter(fn: (r) => r["sensor_type"] == "current")
-  |> filter(fn: (r) => r["threshold_type"] == "apnormal")
+  |> filter(fn: (r) => r["threshold_type"] == "upper_abnormal")
   |> filter(fn: (r) => r["zone"] == "zone_1")
   |> sort(columns: ["_time"], desc: true)
 '''
 
-query_warning = '''
+# Similarly, for lower abnormal, upper warning, and lower warning
+query_lowerAbnormal = '''
 from(bucket: "Dummy_CBM")
   |> range(start: -1h)
   |> filter(fn: (r) => r["_measurement"] == "thresholds")
   |> filter(fn: (r) => r["_field"] == "value")
   |> filter(fn: (r) => r["machine_id"] == "machine_1")
   |> filter(fn: (r) => r["sensor_type"] == "current")
-  |> filter(fn: (r) => r["threshold_type"] == "warning")
+  |> filter(fn: (r) => r["threshold_type"] == "lower_abnormal")
   |> filter(fn: (r) => r["zone"] == "zone_1")
   |> sort(columns: ["_time"], desc: true)
 '''
-query_api = client.query_api()
+
+query_upperWarning = '''
+from(bucket: "Dummy_CBM")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "thresholds")
+  |> filter(fn: (r) => r["_field"] == "value")
+  |> filter(fn: (r) => r["machine_id"] == "machine_1")
+  |> filter(fn: (r) => r["sensor_type"] == "current")
+  |> filter(fn: (r) => r["threshold_type"] == "upper_warning")
+  |> filter(fn: (r) => r["zone"] == "zone_1")
+  |> sort(columns: ["_time"], desc: true)
+'''
+
+query_lowerWarning = '''
+from(bucket: "Dummy_CBM")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "thresholds")
+  |> filter(fn: (r) => r["_field"] == "value")
+  |> filter(fn: (r) => r["machine_id"] == "machine_1")
+  |> filter(fn: (r) => r["sensor_type"] == "current")
+  |> filter(fn: (r) => r["threshold_type"] == "lower_warning")
+  |> filter(fn: (r) => r["zone"] == "zone_1")
+  |> sort(columns: ["_time"], desc: true)
+'''
+
 # Execute the queries
-tables_apnormal = query_api.query(query=query_appnormal, org=org)
-tables_warning = query_api.query(query=query_warning, org=org)
+query_api = client.query_api()
+tables_upperAbnormal = query_api.query(query=query_upperAbnormal, org=org)
+tables_lowerAbnormal = query_api.query(query=query_lowerAbnormal, org=org)
+tables_upperWarning = query_api.query(query=query_upperWarning, org=org)
+tables_lowerWarning = query_api.query(query=query_lowerWarning, org=org)
 
 # Store values
-apnormal_values = {}
-for table in tables_apnormal:
-    for record in table.records:
-        apnormal_values[record["_time"]] = record["_value"]
+threshold_values = {}
 
-warning_values = {}
-for table in tables_warning:
+for table in tables_upperAbnormal:
     for record in table.records:
-        warning_values[record["_time"]] = record["_value"]
+        threshold_values[record["_time"]] = {"upper_abnormal": record["_value"]}
 
-# Combine the closest values
-for time_apnormal, value_apnormal in apnormal_values.items():
-    closest_time_warning = min(warning_values.keys(), key=lambda t: abs(t - time_apnormal))
-    value_warning = warning_values[closest_time_warning]
-    
-    print(f"{value_apnormal},{value_warning}")
+for table in tables_lowerAbnormal:
+    for record in table.records:
+        threshold_values[record["_time"]]["lower_abnormal"] = record["_value"]
+
+for table in tables_upperWarning:
+    for record in table.records:
+        threshold_values[record["_time"]]["upper_warning"] = record["_value"]
+
+for table in tables_lowerWarning:
+    for record in table.records:
+        threshold_values[record["_time"]]["lower_warning"] = record["_value"]
+
+# Display threshold combinations
+for time, values in threshold_values.items():
+    print(f"Time: {time}, Upper Abnormal: {values.get('upper_abnormal')}, Lower Abnormal: {values.get('lower_abnormal')}, Upper Warning: {values.get('upper_warning')}, Lower Warning: {values.get('lower_warning')}")
