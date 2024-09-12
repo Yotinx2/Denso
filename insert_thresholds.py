@@ -5,7 +5,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import time
 from collections import defaultdict
 # Configuration
-bucket = "test"
+bucket = "cbm"
 org = "cbm"
 token = "Er_McfbV4ihp3pq-J9Un6bnVFPG8mT5yDz2kgAiawo-UfdQxoEGkgt-ofWkBVVzP_JxLvAp74af2p0UXJ3O1jw=="
 url = "http://localhost:8086"
