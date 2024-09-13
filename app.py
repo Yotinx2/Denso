@@ -7,9 +7,9 @@ app = Flask(__name__)
 CORS(app) 
 
 influxdb_url = "http://localhost:8086"  
-bucket = "cbm"
-org = "cbm"
-token = "o8zaAgQtH20dtxRHujzTMZOXm2jUoNIAQs2ZzUke_wr4bUxcGKR-igFCxr-3sCd5u2pWzm8RjfLrx48nCXGZMw=="
+token = "6MqmqE78Vs3sUI4v-lSrlYcxo57yBETHmT4cIiMBLZGzfrd-Dw2CL1IDLCnrRKxxEu9kcD6AvtyUP9mcSq7GYw=="
+org = "DIMA"
+bucket = "Dummy_CBM"
 
 client = InfluxDBClient(url=influxdb_url, token=token, org=org)
 
@@ -250,6 +250,81 @@ def get_data():
     except Exception as e:
         print(f"Error executing query: {e}")
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/event-data', methods=['GET'])
+def get_event_data():
+    query = '''
+    from(bucket: "Dummy_CBM")
+      |> range(start: -1s)
+      |> filter(fn: (r) => r["_measurement"] == "event_data")
+      |> filter(fn: (r) => r["_field"] == "event_detail")
+      |> filter(fn: (r) => r["machine_id"] == "machine_1" or r["machine_id"] == "machine_2" or r["machine_id"] == "machine_3" or r["machine_id"] == "machine_4" or r["machine_id"] == "machine_5")
+      |> filter(fn: (r) => r["sensor_type"] == "flow_rate_in" or r["sensor_type"] == "flow_rate_out" or r["sensor_type"] == "temperature" or r["sensor_type"] == "vibration_acceleration" or r["sensor_type"] == "vibration_velocity" or r["sensor_type"] == "water_temp_in")
+      |> filter(fn: (r) => r["status"] == "Warning" or r["status"] == "Abnormal")
+      |> filter(fn: (r) => r["zone"] == "zone_1" or r["zone"] == "zone_2" or r["zone"] == "zone_3" or r["zone"] == "zone_4" or r["zone"] == "zone_5")
+      |> sort(columns: ["_time"], desc: true)
+      |> limit(n: 1)
+    '''
+    
+    try:
+        query_api = client.query_api()
+        tables = query_api.query(query=query)
+        
+        event_data = []
+        for table in tables:
+            for record in table.records:
+                event = {
+                    "status": record.values.get("status"),
+                    "sensors": record.values.get("sensor_type"),
+                    "zone": record.values.get("zone"),
+                    "device": record.values.get("machine_id"),
+                    "detail": record.get_value(),
+                    "_time": record.get_time()
+                }
+                event_data.append(event)
+
+        return jsonify(event_data), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    # Get query parameters
+    start_time = request.args.get('start_time', default="-2s", type=str)
+    end_time = request.args.get('end_time', default="-1s" ,type=str)
+
+    # Build Flux query
+    query = f'''
+    from(bucket: "{bucket}")
+      |> range(start: -1d)
+      |> filter(fn: (r) => r["_measurement"] == "event_data")
+      |> filter(fn: (r) => r["_field"] == "event_detail")
+      |> filter(fn: (r) => r["machine_id"] == "machine_1" or r["machine_id"] == "machine_2" or r["machine_id"] == "machine_3" or r["machine_id"] == "machine_4")
+      |> filter(fn: (r) => r["sensor_type"] == "current" or r["sensor_type"] == "flow_rate_in" or r["sensor_type"] == "speed" or r["sensor_type"] == "flow_rate_out" or r["sensor_type"] == "temperature" or r["sensor_type"] == "vibration_acceleration" or r["sensor_type"] == "vibration_velocity" or r["sensor_type"] == "water_temp_in")
+      |> filter(fn: (r) => r["status"] == "Abnormal" or r["status"] == "Warning")
+      |> filter(fn: (r) => r["zone"] == "zone_1")
+      |> filter(fn: (r) => r._time >= {start_time} and r._time <= {end_time})
+      |> yield(name: "mean")
+    '''
+
+    # Query InfluxDB
+    try:
+        result = client.query_api().query(org=org, query=query)
+        data = []
+        for table in result:
+            for record in table.records:
+                data.append({
+                    "time": record.get_time().isoformat(),
+                    "value": record.get_value()
+                })
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 
 
